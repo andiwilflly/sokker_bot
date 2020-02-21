@@ -1,0 +1,21 @@
+{
+	"auth": {
+		"username": "benelone",
+		"password": "password"
+	},
+	"bot": {
+		"searchFor": [
+			"att",
+			"def",
+			"mid",
+			"gk"
+		],
+		"minAge": 16,
+		"maxAge": 28,
+		"maxPrice": 100000,
+		"minSkillValue": 75,
+		"maxBids": 50,
+		"pollingInterval": 180000,
+		"pollingIterations": 50
+	}
+}
