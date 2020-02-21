@@ -1,4 +1,6 @@
+const fs = require('fs');
 const puppeteer = require('puppeteer');
+const log = require('node-pretty-log');
 const brain = require('brain.js');
 const netData = require('./data/NET.json');
 const CONFIG = require('./CONFIG.json');
@@ -16,7 +18,6 @@ async function startBrowser() {
 
 
 async function login() {
-    console.log(`SOKKER BOT | START`);
     console.table({ ...CONFIG.bot, searchFor: CONFIG.bot.searchFor.join(' | ')});
 
     const { browser, page } = await startBrowser();
@@ -31,15 +32,15 @@ async function login() {
 
     await page.waitFor(1000);
 
-    console.log('SOKKER BOT | logged in...');
+    log('success', 'logged in...');
 
     for(let iteration = 1; iteration <= CONFIG.bot.pollingIterations; iteration++) {
-        console.log('\x1b[36m%s\x1b[0m', 'SOKKER BOT | processPlayers ===> iteration', iteration);
+        log('info', 'processPlayers ===> iteration', iteration);
         // await new Promise(resolve => setTimeout(resolve, 1000))
         await processPlayers(page);
 
         if(iteration +1 === CONFIG.bot.pollingIterations) continue;
-        console.log('\x1b[36m%s\x1b[0m', 'SOKKER BOT | sleeping ' + CONFIG.bot.pollingInterval/1000/60 + ' minutes...');
+        log('info', 'sleeping ' + CONFIG.bot.pollingInterval/1000/60 + ' minutes...');
         await new Promise(resolve => setTimeout(resolve, CONFIG.bot.pollingInterval));
     }
 
@@ -57,16 +58,16 @@ async function parsePlayers(page) {
             return {
                 name: $player.querySelector('.h5 > a').innerText,
                 link: 'http://sokker.org/' + $player.querySelector('.h5 > a').getAttribute('href'),
-                age: +($player.querySelector('.h5').innerText.split(',')[1].replace( /^\D+/g, '')) / 100,
+                age: +($player.querySelector('.h5').innerText.split(',')[1].replace( /^\D+/g, '')),
 
-                stamina: +$skills.querySelectorAll('tr')[0].innerText.match(/\d/g)[0] / 100,
-                keeper: +$skills.querySelectorAll('tr')[0].innerText.match(/\d/g)[1] / 100,
-                pace: +$skills.querySelectorAll('tr')[1].innerText.match(/\d/g)[0] / 100,
-                defender: +$skills.querySelectorAll('tr')[1].innerText.match(/\d/g)[1] / 100,
-                technique: +$skills.querySelectorAll('tr')[2].innerText.match(/\d/g)[0] / 100,
-                playmaker: +$skills.querySelectorAll('tr')[2].innerText.match(/\d/g)[1] / 100,
-                passing: +$skills.querySelectorAll('tr')[3].innerText.match(/\d/g)[0] / 100,
-                striker: +$skills.querySelectorAll('tr')[3].innerText.match(/\d/g)[1] / 100
+                stamina: +$skills.querySelectorAll('tr')[0].children[0].innerText.replace( /\D+/g, ''),
+                keeper: +$skills.querySelectorAll('tr')[0].children[1].innerText.replace( /\D+/g, ''),
+                pace: +$skills.querySelectorAll('tr')[1].children[0].innerText.replace( /\D+/g, ''),
+                defender: +$skills.querySelectorAll('tr')[1].children[1].innerText.replace( /\D+/g, ''),
+                technique: +$skills.querySelectorAll('tr')[2].children[0].innerText.replace( /\D+/g, ''),
+                playmaker: +$skills.querySelectorAll('tr')[2].children[1].innerText.replace( /\D+/g, ''),
+                passing: +$skills.querySelectorAll('tr')[3].children[0].innerText.replace( /\D+/g, ''),
+                striker: +$skills.querySelectorAll('tr')[3].children[1].innerText.replace( /\D+/g, '')
             }
         })
     });
@@ -79,26 +80,47 @@ async function processPlayers(page) {
     for(let player of players) {
         await page.goto(player.link);
 
-        if(player.age*100 < CONFIG.bot.minAge) continue;
-        if(player.age*100 > CONFIG.bot.maxAge) continue;
+        if(player.age < CONFIG.bot.minAge) continue;
+        if(player.age > CONFIG.bot.maxAge) continue;
 
-        const netOutput = NET.run(player);
-        const playerEstimate = Math.max(...CONFIG.bot.searchFor.map(skillName => Math.round(netOutput[skillName] * 100))); // zł
+        const netOutput = NET.run({
+            age: player.age / 100,
+            stamina: player.stamina / 100,
+            keeper:player.keeper / 100,
+            pace: player.pace / 100,
+            defender: player.defender / 100,
+            technique: player.technique / 100,
+            playmaker: player.playmaker / 100,
+            passing: player.passing / 100,
+            striker: player.striker / 100
+        });
+        let playerEstimate = Math.max(...CONFIG.bot.searchFor.map(skillName => Math.round(netOutput[skillName] * 100))); // zł
+        playerEstimate =  Math.round(playerEstimate * 1.6); // uah
+
+        let playerCurrentBid = await page.evaluate(()=> +document.getElementById('player-bid-place').value); // zł
+        playerCurrentBid = Math.round(playerCurrentBid * 1.6); // uah
+
         const playerMaxBid = playerEstimate * 100000;
-        const playerCurrentBid = await page.evaluate(()=> +document.getElementById('player-bid-place').value); // zł
         const buyerName = await page.evaluate(()=> document.getElementById('player-bid-buyer').innerText);
 
-        console.log('SOKKER BOT | ', player.name, player.age*100, ' | playerEstimate: ', playerEstimate, ' | currentBid: ', playerCurrentBid + 'zł');
+        const fields = { ...player };
+        delete fields.link;
+        console.table([{ playerCurrentBid, playerEstimate, ...netOutput }]);
 
-        if(buyerName === 'Benelone FC') { console.log('\x1b[36m%s\x1b[0m', '   ===> buyer is Benelone'); continue; }
-        if(buyerName === 'United Division') { console.log('\x1b[36m%s\x1b[0m', '   ===> buyer is United Division'); continue; }
-        if(playerCurrentBid > playerMaxBid) { console.log('\x1b[33m%s\x1b[0m', '   ===> playerCurrentBid > playerMaxBid'); continue; }
-        if(playerEstimate < CONFIG.bot.minSkillValue) { console.log('\x1b[33m%s\x1b[0m', '   ===> playerEstimate < CONFIG.bot.minSkillValue', playerEstimate); continue; }
-        if(playerCurrentBid > CONFIG.bot.maxPrice) { console.log('\x1b[33m%s\x1b[0m', '  ===> playerCurrentBid > CONFIG.bot.maxPrice', playerCurrentBid + + 'zł'); continue; }
-        if(totalBids > CONFIG.bot.maxBids) { console.log('\x1b[33m%s\x1b[0m', 'total bids limit reached'); continue; }
+        if(buyerName === 'Benelone FC') { log('warn', 'buyer is Benelone'); continue; }
+        if(buyerName === 'United Division') { log('warn', 'buyer is United Division'); continue; }
+        if(playerCurrentBid > playerMaxBid) { log('warn', 'playerCurrentBid > playerMaxBid'); continue; }
+        if(playerEstimate < CONFIG.bot.minSkillValue) { log('warn', 'playerEstimate < CONFIG.bot.minSkillValue', playerEstimate, '<', CONFIG.bot.minSkillValue); continue; }
+        if(playerCurrentBid > CONFIG.bot.maxPrice) { log('warn', 'playerCurrentBid > CONFIG.bot.maxPrice', playerCurrentBid + 'zł > ', CONFIG.bot.maxPrice + 'zł'); continue; }
+        if(totalBids > CONFIG.bot.maxBids) { log('warn', 'total bids limit reached'); continue; }
 
         await page.click('#player-bid-place-group .btn');
-        console.log('\x1b[36m%s\x1b[0m', "   ====> BID DONE");
+        const myBid = await page.evaluate(()=> +document.getElementById('player-bid-place').value);
+
+        log('success', "BID DONE");
+        fs.appendFile('./data/log.txt', `${new Date().toLocaleString()} | BID DONE | ${player.name} | ${myBid} zł | ${player.link} \n`, (err)=> {
+            if (err) throw err;
+        });
 
         console.table({
             link: player.link,
@@ -108,9 +130,12 @@ async function processPlayers(page) {
         });
 
         totalBids +=1;
+
+        console.log(' ------------------------------------------------------------------------------------------------------------------------------------------------------ ');
+        console.log(' ');
     }
 
-    console.log('SOKKER BOT | "processPlayers" end')
+    log('info', '"processPlayers" end')
 }
 
 
