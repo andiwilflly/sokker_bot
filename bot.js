@@ -41,6 +41,8 @@ async function login() {
 
         if(iteration +1 === CONFIG.bot.pollingIterations) continue;
         log('info', 'sleeping ' + CONFIG.bot.pollingInterval/1000/60 + ' minutes...');
+        console.log(' ');
+        console.log(' ');
         await new Promise(resolve => setTimeout(resolve, CONFIG.bot.pollingInterval));
     }
 
@@ -78,10 +80,14 @@ async function processPlayers(page) {
     const players = await parsePlayers(page);
 
     for(let player of players) {
+        console.log(' ');
+        console.log(' ------------------------------------------------------------------------------------------------------------------------------------------------------ ');
+        console.log(' ');
+
         await page.goto(player.link);
 
-        if(player.age < CONFIG.bot.minAge) continue;
-        if(player.age > CONFIG.bot.maxAge) continue;
+        if(player.age < CONFIG.bot.minAge) { log('warn', 'player.age < CONFIG.bot.minAge'); continue; }
+        if(player.age > CONFIG.bot.maxAge) { log('warn', 'player.age > CONFIG.bot.maxAge'); continue; }
 
         const netOutput = NET.run({
             age: player.age / 100,
@@ -94,8 +100,7 @@ async function processPlayers(page) {
             passing: player.passing / 100,
             striker: player.striker / 100
         });
-        let playerEstimate = Math.max(...CONFIG.bot.searchFor.map(skillName => Math.round(netOutput[skillName] * 100))); // zł
-        playerEstimate =  Math.round(playerEstimate * 1.6); // uah
+        const playerEstimate = Math.max(...CONFIG.bot.searchFor.map(skillName => Math.round(netOutput[skillName] * 100)));
 
         let playerCurrentBid = await page.evaluate(()=> +document.getElementById('player-bid-place').value); // zł
         playerCurrentBid = Math.round(playerCurrentBid * 1.6); // uah
@@ -111,14 +116,17 @@ async function processPlayers(page) {
         if(buyerName === 'United Division') { log('warn', 'buyer is United Division'); continue; }
         if(playerCurrentBid > playerMaxBid) { log('warn', 'playerCurrentBid > playerMaxBid'); continue; }
         if(playerEstimate < CONFIG.bot.minSkillValue) { log('warn', 'playerEstimate < CONFIG.bot.minSkillValue', playerEstimate, '<', CONFIG.bot.minSkillValue); continue; }
-        if(playerCurrentBid > CONFIG.bot.maxPrice) { log('warn', 'playerCurrentBid > CONFIG.bot.maxPrice', playerCurrentBid + 'zł > ', CONFIG.bot.maxPrice + 'zł'); continue; }
+        if(playerCurrentBid > CONFIG.bot.maxPrice) { log('warn', 'playerCurrentBid > CONFIG.bot.maxPrice', playerCurrentBid + 'uah > ', CONFIG.bot.maxPrice + 'uah'); continue; }
         if(totalBids > CONFIG.bot.maxBids) { log('warn', 'total bids limit reached'); continue; }
 
         await page.click('#player-bid-place-group .btn');
-        const myBid = await page.evaluate(()=> +document.getElementById('player-bid-place').value);
+
+        const isNeedAcceptBid = await page.evaluate(()=> document.querySelector('.list-inline.list-prefix-raquo a'));
+
+        if(isNeedAcceptBid) { log('error', 'BID NOT DONE, need to accept bid'); continue; }
 
         log('success', "BID DONE");
-        fs.appendFile('./data/log.txt', `${new Date().toLocaleString()} | BID DONE | ${player.name} | ${myBid} zł | ${player.link} \n`, (err)=> {
+        fs.appendFile('./data/log.txt', `${new Date().toLocaleString()} | BID DONE | ${player.name} | ${playerCurrentBid} uah | ${player.link} | skill: ${playerEstimate} \n`, (err)=> {
             if (err) throw err;
         });
 
@@ -130,9 +138,6 @@ async function processPlayers(page) {
         });
 
         totalBids +=1;
-
-        console.log(' ------------------------------------------------------------------------------------------------------------------------------------------------------ ');
-        console.log(' ');
     }
 
     log('info', '"processPlayers" end')

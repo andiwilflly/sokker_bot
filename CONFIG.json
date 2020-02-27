@@ -11,11 +11,11 @@
 			"gk"
 		],
 		"minAge": 16,
-		"maxAge": 28,
-		"maxPrice": 200000,
-		"minSkillValue": 75,
+		"maxAge": 30,
+		"maxPrice": 600000,
+		"minSkillValue": 80,
 		"maxBids": 50,
-		"pollingInterval": 180000,
+		"pollingInterval": 100000,
 		"pollingIterations": 50
 	}
 }
