@@ -17,15 +17,14 @@
 		"maxBids": 50,
 		"pollingInterval": 90000,
 		"pollingIterations": 50,
-		"minSkills": {
-			"stamina": 0,
-			"keeper": 0,
-			"pace": 6,
-			"defender": 0,
-			"technique": 3,
-			"playmaker": 5,
-			"passing": 3,
-			"striker": 0
-		}
+
+		"stamina": 0,
+		"keeper": 0,
+		"pace": 6,
+		"defender": 0,
+		"technique": 3,
+		"playmaker": 5,
+		"passing": 3,
+		"striker": 0
 	}
 }

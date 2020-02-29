@@ -17,9 +17,9 @@
             width: calc(100vw - 40px);
             color: lawngreen;
             line-height: 20px;
-            max-height: calc(100vh - 110px);
+            max-height: calc(100vh - 170px);
             font-size: 16px;
-            margin: 85px 20px 20px 20px;
+            margin: 150px 20px 20px 20px;
         }
 
         #terminal table {
@@ -54,16 +54,88 @@
         button:hover {
             opacity: 0.7;
         }
+
+        input {
+            outline: none;
+            padding: 5px;
+            margin: 0;
+            min-width: 120px;
+        }
+        p {
+            margin: 0 0 5px 0;
+        }
     </style>
 
 </head>
 <body>
 
     <div>
-        <div style="position: fixed; top: 0; left: 0; padding: 20px; width: 100%; display: flex; background: black">
-            <button id="startBtn" onclick="startBot()">Start</button>
-            <button id="stopBtn" onclick="stopBot()" disabled>Stop</button>
-            <button onclick="clearLogs()">Clear</button>
+        <div style="position: fixed; top: 0; left: 0; padding: 20px; width: 100%; display: flex; flex-wrap: wrap; background: black">
+           <div>
+               <button id="startBtn" onclick="startBot()">Start</button>
+               <button id="stopBtn" onclick="stopBot()" disabled>Stop</button>
+               <button onclick="clearLogs()">Clear</button>
+           </div>
+
+            <form id="#data" style="width: 100%; color: whitesmoke; display: flex">
+                <div style="min-width: 150px">
+                    <p>Search for</p>
+                    <input type="checkbox" name="searchFor" value="att" checked>ATT <br/>
+                    <input type="checkbox" name="searchFor" value="def" checked>DEF <br/>
+                    <input type="checkbox" name="searchFor" value="mid" checked>MID <br/>
+                    <input type="checkbox" name="searchFor" value="gk" checked>GK <br/>
+                </div>
+                <div style="min-width: 150px">
+                    <p>minAge</p>
+                    <input type="number" name="minAge" value="16">
+                    <p>maxAge</p>
+                    <input type="number" name="maxAge" value="18">
+                </div>
+                <div style="min-width: 150px">
+                    <p>maxPrice</p>
+                    <input type="number" name="maxPrice" value="800000">
+                    <p>minSkillValue</p>
+                    <input type="number" name="minSkillValue" value="70">
+                </div>
+                <div style="min-width: 150px">
+                    <p>maxBids:</p>
+                    <input type="number" name="maxBids" value="50">
+                </div>
+                <div style="min-width: 150px">
+                    <p>pollingInterval</p>
+                    <input type="number" name="pollingInterval" value="90000">
+                    <p>pollingIterations</p>
+                    <input type="number" name="pollingIterations" value="50">
+                </div>
+
+                <div style="min-width: 150px">
+                    <p>stamina</p>
+                    <input type="number" name="stamina" value="0">
+                    <p>keeper</p>
+                    <input type="number" name="keeper" value="0">
+                </div>
+
+                <div style="min-width: 150px">
+                    <p>pace</p>
+                    <input type="number" name="pace" value="0">
+                    <p>defender</p>
+                    <input type="number" name="defender" value="0">
+                </div>
+
+                <div style="min-width: 150px">
+                    <p>technique</p>
+                    <input type="number" name="technique" value="0">
+                    <p>playmaker</p>
+                    <input type="number" name="playmaker" value="0">
+                </div>
+
+                <div style="min-width: 150px">
+                    <p>passing</p>
+                    <input type="number" name="passing" value="0">
+                    <p>striker</p>
+                    <input type="number" name="striker" value="0">
+                </div>
+            </form>
         </div>
 
         <table id="terminal">
@@ -82,7 +154,18 @@
 	window.startBot = function() {
 		$('#startBtn').prop('disabled', true);
 		$('#stopBtn').prop('disabled', false);
-		socket.emit('startBot', '');
+
+		let CONFIG = $('form').serializeArray().reduce(function(obj, item) {
+			obj[item.name] = item.value;
+			return obj;
+		}, {});
+
+		delete CONFIG.searchFor;
+		$.each($("input[name='searchFor']:checked"), function() {
+			if(!CONFIG.searchFor) CONFIG.searchFor = [];
+			CONFIG.searchFor.push($(this).val())
+		});
+		socket.emit('startBot', CONFIG);
     };
 
 	window.stopBot = function() {
@@ -92,7 +175,6 @@
 	};
 
 	window.clearLogs = function() {
-		console.log('ckearar!');
 		$('#terminal').html('');
     };
 

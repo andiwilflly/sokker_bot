@@ -15,8 +15,8 @@ app.get('/', function(req, res,next) {
 io.on('connection', function(CLIENT) {
 	console.log('Client connected...');
 
-	CLIENT.on('startBot', function(data) {
-		bot.start(CLIENT);
+	CLIENT.on('startBot', function(CONFIG) {
+		bot.start(CLIENT, CONFIG);
 	});
 
 	CLIENT.on('stopBot', function(data) {

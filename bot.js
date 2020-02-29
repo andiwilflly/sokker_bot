@@ -1,9 +1,8 @@
 const fs = require('fs');
 const puppeteer = require('puppeteer');
-const log = require('node-pretty-log');
 const brain = require('brain.js');
 const netData = require('./data/NET.json');
-const CONFIG = require('./CONFIG.json');
+const _CONFIG = require('./CONFIG.json');
 
 const NET = new brain.NeuralNetwork();
 NET.fromJSON(netData);
@@ -24,8 +23,12 @@ function stop(CLIENT) {
     CLIENT.emit('terminal', { name: `<div style="color: red">ERROR</div>`, details: 'STOPPING BOT...' });
 }
 
-async function login(CLIENT) {
-    if(STATUS === 'start') return;
+async function login(CLIENT, clientConfig) {
+    const CONFIG = Object.assign(_CONFIG, { bot: clientConfig });
+
+    console.log(CONFIG);
+
+    if(STATUS === 'start') return CLIENT.emit('terminal', { name: `<div style="color: red">ERROR</div>`, details: 'BOT STOPPED' });
     STATUS = 'start';
 
     CLIENT.emit('terminal', { name: `<div style="color: green">SUCCESS</div>`, details: 'BOT STARTED' });
@@ -50,7 +53,7 @@ async function login(CLIENT) {
         CLIENT.emit('terminal', { name: `<div style="color: lightskyblue">INFO</div>`, details: `Iteration: ${iteration} (STATUS: ${STATUS})` });
 
         // await new Promise(resolve => setTimeout(resolve, 1000))
-        await processPlayers(page, CLIENT);
+        await processPlayers(page, CLIENT, CONFIG);
 
         if(STATUS === 'stop') {
             CLIENT.emit('terminal', { name: `<div style="color: red">ERROR</div>`, details: 'BOT STOPPED' });
@@ -93,7 +96,7 @@ async function parsePlayers(page) {
 }
 
 
-async function processPlayers(page, CLIENT) {
+async function processPlayers(page, CLIENT, CONFIG) {
     const players = await parsePlayers(page);
 
     for(let player of players) {
@@ -155,18 +158,18 @@ async function processPlayers(page, CLIENT) {
         if(buyerName === 'United Division')           { CLIENT.emit('terminal', { name: `<div style="color: orange">WARN</div>`, details: 'buyer is United Division' }); continue; }
         if(playerCurrentBid > playerMaxBid)           { CLIENT.emit('terminal', { name: `<div style="color: orange">WARN</div>`, details: 'playerCurrentBid > playerMaxBid' }); continue; }
         if(playerEstimate < CONFIG.bot.minSkillValue) { CLIENT.emit('terminal', { name: `<div style="color: orange">WARN</div>`, details: 'playerEstimate < CONFIG.bot.minSkillValue ' + playerEstimate + ' < ' + CONFIG.bot.minSkillValue }); continue; }
-        if(playerCurrentBid > CONFIG.bot.maxPrice)    { CLIENT.emit('terminal', { name: `<div style="color: orange">WARN</div>`, details: playerCurrentBid + 'uah > ' + CONFIG.bot.maxPrice + ' UAH' }); continue; }
+        if(playerCurrentBid > CONFIG.bot.maxPrice)    { CLIENT.emit('terminal', { name: `<div style="color: orange">WARN</div>`, details: playerCurrentBid + ' UAH > ' + CONFIG.bot.maxPrice + ' UAH' }); continue; }
         if(totalBids > CONFIG.bot.maxBids)            { CLIENT.emit('terminal', { name: `<div style="color: orange">WARN</div>`, details: 'total bids limit reached' }); continue; }
 
         // Skills filtration
-        if(CONFIG.bot.minSkills.stamina && CONFIG.bot.minSkills.stamina > player.stamina)       { CLIENT.emit('terminal', { name: `<div style="color: orange">WARN</div>`, details: 'stamina: ' + CONFIG.bot.minSkills.stamina + ' > ' + player.stamina }); continue; }
-        if(CONFIG.bot.minSkills.keeper && CONFIG.bot.minSkills.keeper > player.keeper)          { CLIENT.emit('terminal', { name: `<div style="color: orange">WARN</div>`, details: 'keeper: ' + CONFIG.bot.minSkills.keeper + ' > ' + player.keeper }); continue; }
-        if(CONFIG.bot.minSkills.pace && CONFIG.bot.minSkills.pace > player.pace)                { CLIENT.emit('terminal', { name: `<div style="color: orange">WARN</div>`, details: 'pace: ' + CONFIG.bot.minSkills.pace + ' > ' + player.pace }); continue; }
-        if(CONFIG.bot.minSkills.defender && CONFIG.bot.minSkills.defender > player.defender)    { CLIENT.emit('terminal', { name: `<div style="color: orange">WARN</div>`, details: 'defender: ' + CONFIG.bot.minSkills.defender + ' > ' + player.defender }); continue; }
-        if(CONFIG.bot.minSkills.technique && CONFIG.bot.minSkills.technique > player.technique) { CLIENT.emit('terminal', { name: `<div style="color: orange">WARN</div>`, details: 'technique: ' + CONFIG.bot.minSkills.technique + ' > ' + player.technique }); continue; }
-        if(CONFIG.bot.minSkills.playmaker && CONFIG.bot.minSkills.playmaker > player.playmaker) { CLIENT.emit('terminal', { name: `<div style="color: orange">WARN</div>`, details: 'playmaker: ' + CONFIG.bot.minSkills.playmaker + ' > ' + player.playmaker }); continue; }
-        if(CONFIG.bot.minSkills.passing && CONFIG.bot.minSkills.passing > player.passing)       { CLIENT.emit('terminal', { name: `<div style="color: orange">WARN</div>`, details: 'passing: ' + CONFIG.bot.minSkills.passing + ' > ' + player.passing }); continue; }
-        if(CONFIG.bot.minSkills.striker && CONFIG.bot.minSkills.striker > player.striker)       { CLIENT.emit('terminal', { name: `<div style="color: orange">WARN</div>`, details: 'striker: ' + CONFIG.bot.minSkills.striker + ' > ' + player.striker }); continue; }
+        if(CONFIG.bot.stamina && CONFIG.bot.stamina > player.stamina)       { CLIENT.emit('terminal', { name: `<div style="color: orange">WARN</div>`, details: 'stamina: ' + CONFIG.bot.stamina + ' > ' + player.stamina }); continue; }
+        if(CONFIG.bot.keeper && CONFIG.bot.keeper > player.keeper)          { CLIENT.emit('terminal', { name: `<div style="color: orange">WARN</div>`, details: 'keeper: ' + CONFIG.bot.keeper + ' > ' + player.keeper }); continue; }
+        if(CONFIG.bot.pace && CONFIG.bot.pace > player.pace)                { CLIENT.emit('terminal', { name: `<div style="color: orange">WARN</div>`, details: 'pace: ' + CONFIG.bot.pace + ' > ' + player.pace }); continue; }
+        if(CONFIG.bot.defender && CONFIG.bot.defender > player.defender)    { CLIENT.emit('terminal', { name: `<div style="color: orange">WARN</div>`, details: 'defender: ' + CONFIG.bot.defender + ' > ' + player.defender }); continue; }
+        if(CONFIG.bot.technique && CONFIG.bot.technique > player.technique) { CLIENT.emit('terminal', { name: `<div style="color: orange">WARN</div>`, details: 'technique: ' + CONFIG.bot.technique + ' > ' + player.technique }); continue; }
+        if(CONFIG.bot.playmaker && CONFIG.bot.playmaker > player.playmaker) { CLIENT.emit('terminal', { name: `<div style="color: orange">WARN</div>`, details: 'playmaker: ' + CONFIG.bot.playmaker + ' > ' + player.playmaker }); continue; }
+        if(CONFIG.bot.passing && CONFIG.bot.passing > player.passing)       { CLIENT.emit('terminal', { name: `<div style="color: orange">WARN</div>`, details: 'passing: ' + CONFIG.bot.passing + ' > ' + player.passing }); continue; }
+        if(CONFIG.bot.striker && CONFIG.bot.striker > player.striker)       { CLIENT.emit('terminal', { name: `<div style="color: orange">WARN</div>`, details: 'striker: ' + CONFIG.bot.striker + ' > ' + player.striker }); continue; }
 
 
         await page.click('#player-bid-place-group .btn');
@@ -178,10 +181,7 @@ async function processPlayers(page, CLIENT) {
             continue;
         }
 
-        CLIENT.emit('terminal', { name: `<div style="color: green">SUCCESS</div>`, details: `${new Date().toLocaleString()} | BID DONE | ${player.name} | ${playerCurrentBid} uah | ${player.link} | skill: ${playerEstimate}` });
-        fs.appendFile('./data/log.txt', `${new Date().toLocaleString()} | BID DONE | ${player.name} | ${playerCurrentBid} uah | ${player.link} | skill: ${playerEstimate} \n`, (err)=> {
-            if (err) throw err;
-        });
+        CLIENT.emit('terminal', { name: `<div style="color: green">SUCCESS</div>`, details: `BID DONE | ${player.name} | ${playerCurrentBid} uah | ${player.link} | skill: ${playerEstimate}` });
 
 
         CLIENT.emit('terminal', {
@@ -195,7 +195,7 @@ async function processPlayers(page, CLIENT) {
                 </tr>
                 <tr>
                     <td><a href="${player.link}" target="_blank">${player.name}</a></td>
-                    <td>${playerEstimate}%</td>
+                    <td>${playerEstimate}</td>
                     <td>${playerMaxBid} UAH</td>
                     <td>${playerCurrentBid} UAH</td>
                 </tr>
