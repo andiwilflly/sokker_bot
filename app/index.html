@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: black;
+            font-family: monospace;
+        }
+
+        a {
+            color: dodgerblue;
+        }
+        #terminal {
+            width: calc(100vw - 40px);
+            color: lawngreen;
+            line-height: 20px;
+            max-height: calc(100vh - 110px);
+            font-size: 16px;
+            margin: 85px 20px 20px 20px;
+        }
+
+        #terminal table {
+            border-collapse: collapse;
+            width: 100%;
+            color: #b1aaaa;
+            font-size: 14px;
+        }
+
+        #terminal table td {
+            border: 1px solid lawngreen;
+            min-width: 100px;
+            padding: 5px;
+        }
+
+        button {
+            border: none;
+            padding: 5px 10px;
+            border-radius: 0;
+            background: steelblue;
+            color: white;
+            outline: none;
+            cursor: pointer;
+            font-size: 20px;
+            margin: 5px;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        button:hover {
+            opacity: 0.7;
+        }
+    </style>
+
+</head>
+<body>
+
+    <div>
+        <div style="position: fixed; top: 0; left: 0; padding: 20px; width: 100%; display: flex; background: black">
+            <button id="startBtn" onclick="startBot()">Start</button>
+            <button id="stopBtn" onclick="stopBot()" disabled>Stop</button>
+            <button onclick="clearLogs()">Clear</button>
+        </div>
+
+        <table id="terminal">
+        </table>
+    </div>
+
+<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+</body>
+</html>
+
+
+<script>
+	window.socket = io.connect();
+
+	window.startBot = function() {
+		$('#startBtn').prop('disabled', true);
+		$('#stopBtn').prop('disabled', false);
+		socket.emit('startBot', '');
+    };
+
+	window.stopBot = function() {
+		$('#startBtn').prop('disabled', false);
+		$('#stopBtn').prop('disabled', true);
+		socket.emit('stopBot', '');
+	};
+
+	window.clearLogs = function() {
+		console.log('ckearar!');
+		$('#terminal').html('');
+    };
+
+
+	socket.on('terminal', function(data) {
+		const $terminal = $("#terminal");
+
+		$terminal.append(`<tr>
+           <td style="color: #b1a9a9; font-size: 14px; padding-top: ${data.name.match('PLAYER') ? '30px' : 0}" width="200px">${new Date().toLocaleString()}</td>
+           <td style="padding-top: ${data.name.match('PLAYER') ? '30px' : 0}" width="100px">${data.name}</td>
+           <td style="padding-top: ${data.name.match('PLAYER') ? '30px' : 0}">${data.details}</td>
+        </tr>`);
+	});
+
+</script>
