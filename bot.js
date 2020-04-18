@@ -50,6 +50,8 @@ async function login(CLIENT, clientConfig) {
     CLIENT.emit('terminal', { name: `<div style="color: green">SUCCESS</div>`, details: "Logged in to sokker.org" });
 
     for(let iteration = 1; iteration <= CONFIG.bot.pollingIterations; iteration++) {
+        console.log('processPlayers... iteration: ', iteration);
+
         CLIENT.emit('terminal', { name: `<div style="color: lightskyblue">INFO</div>`, details: `Iteration: ${iteration} (STATUS: ${STATUS})` });
 
         // await new Promise(resolve => setTimeout(resolve, 1000))
@@ -116,8 +118,8 @@ async function processPlayers(page, CLIENT, CONFIG) {
         });
         const playerEstimate = Math.max(...CONFIG.bot.searchFor.map(skillName => Math.round(netOutput[skillName] * 100)));
 
-        let playerCurrentBid = await page.evaluate(()=> +document.getElementById('player-bid-place').value); // zł
-        playerCurrentBid = Math.round(playerCurrentBid * 1.6); // uah
+        let playerCurrentBid = await page.evaluate(()=> +document.getElementById('player-bid-place').value); // uah
+        playerCurrentBid = Math.round(playerCurrentBid); // uah
 
         const playerMaxBid = playerEstimate * 100000;
         const buyerName = await page.evaluate(()=> document.getElementById('player-bid-buyer').innerText);

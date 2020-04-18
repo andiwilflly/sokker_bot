@@ -1,7 +1,7 @@
 {
 	"auth": {
-		"username": "benelone",
-		"password": "password"
+		"username": "fireinside8888",
+		"password": "fireinside"
 	},
 	"bot": {
 		"searchFor": [
@@ -11,12 +11,12 @@
 			"gk"
 		],
 		"minAge": 16,
-		"maxAge": 18,
-		"maxPrice": 800000,
-		"minSkillValue": 70,
+		"maxAge": 28,
+		"maxPrice": 1000000,
+		"minSkillValue": 77,
 		"maxBids": 50,
 		"pollingInterval": 90000,
-		"pollingIterations": 50,
+		"pollingIterations": 100,
 
 		"stamina": 0,
 		"keeper": 0,
